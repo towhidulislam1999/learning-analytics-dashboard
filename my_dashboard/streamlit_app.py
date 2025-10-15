@@ -7,6 +7,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from collections import Counter
 import re
+from text_analyzer import TextAnalyzer
+
 
 
 # ============================================
