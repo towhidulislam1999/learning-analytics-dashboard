@@ -222,7 +222,7 @@ if uploaded_file is not None:
             # Read CSV
             df = pd.read_csv(uploaded_file)
             # Normalize column names to lowercase (strip spaces too)
-df.columns = [col.strip().lower() for col in df.columns]
+            df.columns = [col.strip().lower() for col in df.columns]
 
             
             # Validate columns
