@@ -6,8 +6,9 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from collections import Counter
-import re
 from text_analyzer import TextAnalyzer
+import re
+
 
 
 
@@ -203,15 +204,26 @@ with tab2:
     st.subheader("📁 Upload Student Essays")
     
     uploaded_file = st.file_uploader(
-        "Upload CSV file (columns: student_name, essay)",
-        type=['csv'],
-        help="CSV file should contain 'student_name' and 'essay' columns"
-    )
+    "Upload CSV file...",
+    type=['csv'],
+)
+if uploaded_file is not None:
+    df = pd.read_csv(uploaded_file)
+    df.columns = [col.strip().lower() for col in df.columns]   # <--- Add this!
+    if 'student_name' not in df.columns or 'essay' not in df.columns:
+        st.error("❌ CSV must have 'student_name' and 'essay' columns")
+    else:
+        # You can safely use df['student_name'] and df['essay']
+        ...
+
     
     if uploaded_file is not None:
         try:
             # Read CSV
             df = pd.read_csv(uploaded_file)
+            # Normalize column names to lowercase (strip spaces too)
+df.columns = [col.strip().lower() for col in df.columns]
+
             
             # Validate columns
             if 'student_name' not in df.columns or 'essay' not in df.columns:
