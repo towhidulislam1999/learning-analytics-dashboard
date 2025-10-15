@@ -44,12 +44,18 @@ st.markdown("""
     .stTabs [data-baseweb="tab"] {
         height: 50px;
         padding: 10px 20px;
-        background-color: #f0f2f6;
+        background-color: #22223b;        
         border-radius: 5px;
+        color: #e0e1dd;                  
+        opacity: 1;
+        transition: background 0.2s;
     }
     .stTabs [aria-selected="true"] {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     }
     </style>
     """, unsafe_allow_html=True)
