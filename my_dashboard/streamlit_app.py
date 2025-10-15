@@ -203,101 +203,103 @@ with tab1:
 # ============================================
 with tab2:
     st.subheader("📁 Upload Student Essays")
-    
-    uploaded_file = st.file_uploader(
-    "Upload CSV file...",
-    type=['csv'],
-)
-if uploaded_file is not None:
-    df = pd.read_csv(uploaded_file)
-    df.columns = [col.strip().lower() for col in df.columns]   # <--- Add this!
-    if 'student_name' not in df.columns or 'essay' not in df.columns:
-        st.error("❌ CSV must have 'student_name' and 'essay' columns")
-    else:
-        # You can safely use df['student_name'] and df['essay']
-        ...
 
-    
+    uploaded_file = st.file_uploader(
+        "Upload CSV, Excel, or Word file (columns: student_name, essay)",
+        type=['csv', 'xlsx', 'xls', 'docx'],
+        help="Supported: CSV (comma), Excel (.xlsx, .xls), Word (.docx)"
+    )
+
     if uploaded_file is not None:
         try:
-            # Read CSV
-            df = pd.read_csv(uploaded_file)
-            # Normalize column names to lowercase (strip spaces too)
-            df.columns = [col.strip().lower() for col in df.columns]
-
-            
-            # Validate columns
-            if 'student_name' not in df.columns or 'essay' not in df.columns:
-                st.error("❌ CSV must have 'student_name' and 'essay' columns")
+            file_name = uploaded_file.name.lower()
+            if file_name.endswith('.csv'):
+                df = pd.read_csv(uploaded_file)
+            elif file_name.endswith('.xlsx') or file_name.endswith('.xls'):
+                df = pd.read_excel(uploaded_file)
+            elif file_name.endswith('.docx'):
+                doc = Document(uploaded_file)
+                data = []
+                for para in doc.paragraphs:
+                    txt = para.text.strip()
+                    if txt:
+                        if ' ' in txt:
+                            name, essay = txt.split(' ', 1)
+                        else:
+                            name, essay = 'Unknown', txt
+                        data.append({'student_name': name, 'essay': essay})
+                df = pd.DataFrame(data)
             else:
-                # Process essays
-                for _, row in df.iterrows():
-                    name = row['student_name']
-                    text = str(row['essay'])
-                    
-                    # Initialize student if new
-                    if name not in st.session_state.students:
-                        st.session_state.students[name] = {
-                            'name': name,
-                            'essays': [],
-                            'total_words': 0,
-                            'avg_sentiment': 0,
-                            'avg_words': 0,
-                            'strengths': [],
-                            'weaknesses': []
-                        }
-                    
-                    # Analyze essay
-                    analysis = st.session_state.analyzer.analyze_text(text)
-                    st.session_state.students[name]['essays'].append({
-                        'text': text,
-                        'analysis': analysis
-                    })
-                    st.session_state.students[name]['total_words'] += analysis['word_count']
-                    
-                    st.session_state.essays.append({
-                        'student_name': name,
-                        'essay': text
-                    })
-                
-                # Calculate student averages
-                for student in st.session_state.students.values():
-                    essay_count = len(student['essays'])
-                    sentiments = [e['analysis']['sentiment'] for e in student['essays']]
-                    student['avg_sentiment'] = sum(sentiments) / essay_count
-                    student['avg_words'] = student['total_words'] // essay_count
-                    
-                    # Strengths and weaknesses
-                    student['strengths'] = []
-                    student['weaknesses'] = []
-                    if student['avg_words'] > 200:
-                        student['strengths'].append('Good essay length')
-                    else:
-                        student['weaknesses'].append('Short essays')
-                    
-                    if student['avg_sentiment'] > 0.3:
-                        student['strengths'].append('Positive tone')
-                    elif student['avg_sentiment'] < -0.1:
-                        student['weaknesses'].append('Negative tone')
-                
-                st.success(f"✅ Successfully processed {len(df)} essays from {uploaded_file.name}")
-                
-                # Show preview
-                st.subheader("📄 File Preview")
-                st.dataframe(df.head(), use_container_width=True)
-        
+                st.error("Unsupported file format.")
+                st.stop()
+
+            # Normalize column headers
+            df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
+            if 'student_name' not in df.columns or 'essay' not in df.columns:
+                st.error("❌ File must have 'student_name' and 'essay' columns!")
+                st.stop()
+
+            st.success(f"✅ Successfully loaded {len(df)} essays from {uploaded_file.name}")
+            st.dataframe(df.head(), use_container_width=True)
+
+            # Main loop: add/aggregate to session state, perform analysis
+            for _, row in df.iterrows():
+                name = str(row['student_name']).strip()
+                text = str(row['essay']).strip()
+
+                # Initialize student in session_state if new
+                if name not in st.session_state.students:
+                    st.session_state.students[name] = {
+                        'name': name,
+                        'essays': [],
+                        'total_words': 0,
+                        'avg_sentiment': 0,
+                        'avg_words': 0,
+                        'strengths': [],
+                        'weaknesses': []
+                    }
+
+                # Analyze essay with your analyzer
+                analysis = st.session_state.analyzer.analyze_text(text)
+                st.session_state.students[name]['essays'].append({
+                    'text': text,
+                    'analysis': analysis
+                })
+                st.session_state.students[name]['total_words'] += analysis['word_count']
+                st.session_state.essays.append({
+                    'student_name': name,
+                    'essay': text
+                })
+
+            # Update calculated statistics for each student
+            for student in st.session_state.students.values():
+                essay_count = len(student['essays'])
+                sentiments = [e['analysis']['sentiment'] for e in student['essays']]
+                student['avg_sentiment'] = sum(sentiments) / essay_count
+                student['avg_words'] = student['total_words'] // essay_count
+                student['strengths'], student['weaknesses'] = [], []
+                if student['avg_words'] > 200:
+                    student['strengths'].append('Good essay length')
+                else:
+                    student['weaknesses'].append('Short essays')
+                if student['avg_sentiment'] > 0.3:
+                    student['strengths'].append('Positive tone')
+                elif student['avg_sentiment'] < -0.1:
+                    student['weaknesses'].append('Negative tone')
+
         except Exception as e:
             st.error(f"❌ Error processing file: {e}")
-    
+
     # Show uploaded files
     if st.session_state.essays:
         st.markdown("---")
         st.subheader(f"📚 Loaded Data: {len(st.session_state.essays)} essays")
-        
+
         if st.button("🗑️ Clear All Data", type="secondary"):
             st.session_state.students = {}
             st.session_state.essays = []
             st.rerun()
+
 
 # ============================================
 # TAB 3: STUDENT ANALYSIS
