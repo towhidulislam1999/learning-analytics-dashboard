@@ -391,4 +391,5 @@ with tab4:
         with col2:
             st.metric("📝 Avg Sentences", f"{avg_sentences:.1f}")
         with col3:
-            st.metric("
+            st.metric("📖 Avg Flesch Score", f"{avg_flesch:.1f}")
+
