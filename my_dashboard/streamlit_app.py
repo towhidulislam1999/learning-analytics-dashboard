@@ -1,5 +1,4 @@
 import streamlit as st
-
 # learning_analytics_dashboard.py
 import streamlit as st
 import pandas as pd
@@ -9,10 +8,6 @@ import plotly.graph_objects as go
 from collections import Counter
 from text_analyzer import TextAnalyzer
 import re
-
-
-
-
 # ============================================
 # STREAMLIT APP CONFIGURATION
 # ============================================
@@ -22,9 +17,9 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
 # Custom CSS for better styling
-st.markdown("""
+st.markdown(
+    """
     <style>
     .main-header {
         font-size: 2.5rem;
@@ -40,25 +35,26 @@ st.markdown("""
         color: white;
         text-align: center;
     }
-    .stTabs [data-baseweb="tab-list"] {
+    .stTabs [data-baseweb=\"tab-list\"] {
         gap: 10px;
     }
-    .stTabs [data-baseweb="tab"] {
+    .stTabs [data-baseweb=\"tab\"] {
         height: 50px;
         padding: 10px 20px;
-        background-color: #22223b;        
+        background-color: #22223b; 
         border-radius: 5px;
-        color: #e0e1dd;                  
+        color: #e0e1dd; 
         opacity: 1;
         transition: background 0.2s;
     }
-    .stTabs [aria-selected="true"] {
+    .stTabs [aria-selected=\"true\"] {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
     }
     </style>
-    """, unsafe_allow_html=True)
-
+    """,
+    unsafe_allow_html=True
+)
 # ============================================
 # SESSION STATE INITIALIZATION
 # ============================================
@@ -68,7 +64,6 @@ if 'essays' not in st.session_state:
     st.session_state.essays = []
 if 'analyzer' not in st.session_state:
     st.session_state.analyzer = TextAnalyzer()
-
 # ============================================
 # SIDEBAR - LOGIN & SETTINGS
 # ============================================
@@ -115,24 +110,20 @@ with st.sidebar:
         - Columns: `student_name`, `essay`
         - Max 200MB
         """)
-
 # Check if logged in
 if 'logged_in' not in st.session_state or not st.session_state.logged_in:
     st.markdown('<p class="main-header">📚 Learning Analytics Dashboard</p>', unsafe_allow_html=True)
     st.info("👈 Please login using the sidebar")
     st.stop()
-
 # ============================================
 # MAIN DASHBOARD
 # ============================================
 st.markdown('<p class="main-header">📚 Learning Analytics Dashboard</p>', unsafe_allow_html=True)
 st.markdown(f"**Current User:** {st.session_state.current_user}")
-
 # ============================================
 # TABS
 # ============================================
 tab1, tab2, tab3, tab4 = st.tabs(["📊 Overview", "📁 File Management", "👥 Student Analysis", "🔬 NLP Analysis"])
-
 # ============================================
 # TAB 1: OVERVIEW
 # ============================================
@@ -176,11 +167,11 @@ with tab1:
         with col1:
             st.subheader("📈 Word Count by Student")
             student_data = pd.DataFrame([
-                {'Student': name, 'Avg Words': s['avg_words']}
+                {'student': name, 'avg_words': s['avg_words']}
                 for name, s in st.session_state.students.items()
             ])
-            fig1 = px.bar(student_data, x='Student', y='Avg Words', 
-                         color_discrete_sequence=['#667eea'])
+            fig1 = px.bar(student_data, x='student', y='avg_words', 
+                          color_discrete_sequence=['#667eea'])
             st.plotly_chart(fig1, use_container_width=True)
         
         with col2:
@@ -197,19 +188,16 @@ with tab1:
             st.plotly_chart(fig2, use_container_width=True)
     else:
         st.info("📤 Upload CSV files in the 'File Management' tab to see analytics")
-
 # ============================================
 # TAB 2: FILE MANAGEMENT
 # ============================================
 with tab2:
     st.subheader("📁 Upload Student Essays")
-
     uploaded_file = st.file_uploader(
         "Upload CSV, Excel, or Word file (columns: student_name, essay)",
         type=['csv', 'xlsx', 'xls', 'docx'],
         help="Supported: CSV (comma), Excel (.xlsx, .xls), Word (.docx)"
     )
-
     if uploaded_file is not None:
         try:
             file_name = uploaded_file.name.lower()
@@ -232,21 +220,17 @@ with tab2:
             else:
                 st.error("Unsupported file format.")
                 st.stop()
-
             # Normalize column headers
             df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
             if 'student_name' not in df.columns or 'essay' not in df.columns:
                 st.error("❌ File must have 'student_name' and 'essay' columns!")
                 st.stop()
-
             st.success(f"✅ Successfully loaded {len(df)} essays from {uploaded_file.name}")
             st.dataframe(df.head(), use_container_width=True)
-
             # Main loop: add/aggregate to session state, perform analysis
             for _, row in df.iterrows():
                 name = str(row['student_name']).strip()
                 text = str(row['essay']).strip()
-
                 # Initialize student in session_state if new
                 if name not in st.session_state.students:
                     st.session_state.students[name] = {
@@ -258,7 +242,6 @@ with tab2:
                         'strengths': [],
                         'weaknesses': []
                     }
-
                 # Analyze essay with your analyzer
                 analysis = st.session_state.analyzer.analyze_text(text)
                 st.session_state.students[name]['essays'].append({
@@ -270,7 +253,6 @@ with tab2:
                     'student_name': name,
                     'essay': text
                 })
-
             # Update calculated statistics for each student
             for student in st.session_state.students.values():
                 essay_count = len(student['essays'])
@@ -279,28 +261,23 @@ with tab2:
                 student['avg_words'] = student['total_words'] // essay_count
                 student['strengths'], student['weaknesses'] = [], []
                 if student['avg_words'] > 200:
-                    student['strengths'].append('Good essay length')
+                    student['strengths'].append('good_essay_length')
                 else:
-                    student['weaknesses'].append('Short essays')
+                    student['weaknesses'].append('short_essays')
                 if student['avg_sentiment'] > 0.3:
-                    student['strengths'].append('Positive tone')
+                    student['strengths'].append('positive_tone')
                 elif student['avg_sentiment'] < -0.1:
-                    student['weaknesses'].append('Negative tone')
-
+                    student['weaknesses'].append('negative_tone')
         except Exception as e:
             st.error(f"❌ Error processing file: {e}")
-
     # Show uploaded files
     if st.session_state.essays:
         st.markdown("---")
         st.subheader(f"📚 Loaded Data: {len(st.session_state.essays)} essays")
-
         if st.button("🗑️ Clear All Data", type="secondary"):
             st.session_state.students = {}
             st.session_state.essays = []
             st.rerun()
-
-
 # ============================================
 # TAB 3: STUDENT ANALYSIS
 # ============================================
@@ -349,24 +326,24 @@ with tab3:
             
             essay_data = pd.DataFrame([
                 {
-                    'Essay': f"Essay {i+1}",
-                    'Word Count': essay['analysis']['word_count'],
-                    'Sentiment': essay['analysis']['sentiment'] * 100
+                    'essay': f"Essay {i+1}",
+                    'word_count': essay['analysis']['word_count'],
+                    'sentiment': essay['analysis']['sentiment'] * 100
                 }
                 for i, essay in enumerate(student['essays'])
             ])
             
             fig = go.Figure()
             fig.add_trace(go.Scatter(
-                x=essay_data['Essay'], 
-                y=essay_data['Word Count'],
+                x=essay_data['essay'], 
+                y=essay_data['word_count'],
                 mode='lines+markers',
                 name='Word Count',
                 line=dict(color='#667eea', width=3)
             ))
             fig.add_trace(go.Scatter(
-                x=essay_data['Essay'], 
-                y=essay_data['Sentiment'],
+                x=essay_data['essay'], 
+                y=essay_data['sentiment'],
                 mode='lines+markers',
                 name='Sentiment (x100)',
                 line=dict(color='#764ba2', width=3),
@@ -388,7 +365,6 @@ with tab3:
                     st.text_area(f"essay_{i}", essay['text'], height=100, disabled=True, label_visibility="collapsed")
                     st.caption(f"Word Count: {essay['analysis']['word_count']} | Sentiment: {essay['analysis']['sentiment']:.2f}")
                     st.markdown("---")
-
 # ============================================
 # TAB 4: NLP ANALYSIS
 # ============================================
@@ -415,66 +391,4 @@ with tab4:
         with col2:
             st.metric("📝 Avg Sentences", f"{avg_sentences:.1f}")
         with col3:
-            st.metric("📖 Avg Flesch Score", f"{avg_flesch:.1f}")
-        
-        st.markdown("---")
-        
-        # Word frequency analysis
-        st.subheader("💬 Most Common Words")
-        
-        all_words = []
-        for essay in st.session_state.essays:
-            words = essay['essay'].lower().split()
-            clean_words = [w.strip('.,!?') for w in words if len(w) > 3]
-            all_words.extend(clean_words)
-        
-        word_freq = Counter(all_words).most_common(10)
-        
-        word_df = pd.DataFrame(word_freq, columns=['Word', 'Frequency'])
-        fig = px.bar(word_df, x='Word', y='Frequency', 
-                     color='Frequency',
-                     color_continuous_scale='Purples')
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # Readability distribution
-        st.subheader("📚 Readability Level Distribution")
-        
-        readability_counts = {}
-        for analysis in all_analyses:
-            level = analysis['readability_level']
-            readability_counts[level] = readability_counts.get(level, 0) + 1
-        
-        read_df = pd.DataFrame(list(readability_counts.items()), columns=['Level', 'Count'])
-        fig2 = px.pie(read_df, values='Count', names='Level', 
-                      color_discrete_sequence=px.colors.sequential.Purples_r)
-        st.plotly_chart(fig2, use_container_width=True)
-        
-        # Recommendations
-        st.subheader("💡 Recommendations")
-        
-        recommendations = []
-        short_essays = sum(1 for s in st.session_state.students.values() if s['avg_words'] < 150)
-        low_sentiment = sum(1 for s in st.session_state.students.values() if s['avg_sentiment'] < -0.1)
-        high_performers = sum(1 for s in st.session_state.students.values() 
-                            if s['avg_words'] > 250 and s['avg_sentiment'] > 0.2)
-        
-        if short_essays > len(st.session_state.students) * 0.3:
-            recommendations.append("📝 Consider encouraging students to expand their essays with more details")
-        
-        if low_sentiment > len(st.session_state.students) * 0.2:
-            recommendations.append("💬 Some students show negative sentiment - consider one-on-one discussions")
-        
-        if high_performers > 0:
-            recommendations.append(f"⭐ {high_performers} student(s) showing excellent performance - recognize their effort")
-        
-        if not recommendations:
-            recommendations.append("✅ Overall class performance is balanced. Continue current teaching approach.")
-        
-        for rec in recommendations:
-            st.info(rec)
-
-# ============================================
-# FOOTER
-# ============================================
-st.markdown("---")
-st.caption("Learning Analytics Dashboard | Built with Streamlit & Python NLP")
+            st.metric("
