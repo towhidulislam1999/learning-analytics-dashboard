@@ -3,6 +3,7 @@ import streamlit as st
 # learning_analytics_dashboard.py
 import streamlit as st
 import pandas as pd
+from docx import Document 
 import plotly.express as px
 import plotly.graph_objects as go
 from collections import Counter
